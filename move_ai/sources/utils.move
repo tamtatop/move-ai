@@ -14,6 +14,18 @@ module move_ai::signed_fixed_point32 {
     use aptos_std::fixed_point32;
     use aptos_std::fixed_point32::FixedPoint32;
 
+    public fun new(value: FixedPoint32, is_negative: bool) {
+        SignedFixedPoint32 { value: value, is_negative: is_negative }
+    }
+
+    public fun new_positive(value: FixedPoint32) {
+        SignedFixedPoint32 { value: value, is_negative: false }
+    }
+
+    public fun new_negative(value: FixedPoint32) {
+        SignedFixedPoint32 { value: value, is_negative: true }
+    }
+
     /// Define a signed integer type with two 32 bits.
     struct SignedFixedPoint32 has copy, drop, store {
         value: FixedPoint32,
@@ -62,7 +74,7 @@ module move_ai::signed_fixed_point32 {
     }
 
     /// a - b
-    public fun sub(a: SignedFixedPoint32, b: SignedFixedPoint32): SignedFixedPoint32{
+    public fun sub(a: SignedFixedPoint32, b: SignedFixedPoint32): SignedFixedPoint32 {
         add(a, negate(b))
     }
 
@@ -99,9 +111,11 @@ module move_ai::signed_fixed_point32 {
     }
 
     #[test]
-    public fun sum() {
-
-
+    public fun test_add() {
+        let one = SignedFixedPoint32{ value: 3, is_negative: false };
+        let two = SignedFixedPoint32{ value: 2, is_negative: false };
+        let five = SignedFixedPoint32{ value: 5, is_negative: false };
+        assert_approx_the_same(five, add(one, two));
     }
 
 }
