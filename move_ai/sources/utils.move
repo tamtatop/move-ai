@@ -5,7 +5,8 @@ module move_ai::Math {
     use move_ai::signed_fixed_point32::SignedFixedPoint32;
 
     public fun sigmoid(z: &SignedFixedPoint32): SignedFixedPoint32 {
-        encode(1) / (encode(1) + exp_raw(signed_fixed_point32::SignedFixedPoint32 { value: z, is_negative: true }))
+
+        encode(1) / (encode(1) + exp(signed_fixed_point32::SignedFixedPoint32 { value: z.value, is_negative: true }))
     }
 }
 
@@ -37,9 +38,17 @@ module move_ai::signed_fixed_point32 {
     }
 
     public fun exp(x: SignedFixedPoint32): SignedFixedPoint32 {
-        let fixed_point = exp(x.value);
-        SignedFixedPoint32 { value: fixed_point, is_negative: false}
+        if (x.is_negative) {
+            let fixed_point = fixed_point32::exp(x.value);
+            let inverse_fixed_point = fixed_point32::mul_div(FixedPoint32 { value: 1 }, FixedPoint32 { value: 1 }, fixed_point);
+            SignedFixedPoint32 { value: inverse_fixed_point, is_negative: false }
+        } else {
+            SignedFixedPoint32 { value: fixed_point32::exp(x.value), is_negative: false }
+        }
+        
     }
+
+    // public fun sum
 
     /// Check if the given num is negative.
     public fun is_negative(num: SignedFixedPoint32): bool {
