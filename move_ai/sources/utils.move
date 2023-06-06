@@ -1,11 +1,9 @@
 module move_ai::Math {
-    use aptos_std::fixed_point32;
-    use aptos_std::fixed_point32::FixedPoint32;
-    use move_ai::signed_fixed_point32;
+    use move_ai::signed_fixed_point32::{div, add, exp, negate};
     use move_ai::signed_fixed_point32::SignedFixedPoint32;
 
     public fun sigmoid(z: &SignedFixedPoint32): SignedFixedPoint32 {
-        let one = SignedFixedPoint32 { value: 1, is_negative: false };
+        let one = signed_fixed_point32::create_from_int(1, true);
         div(one, add(one, exp(negate(z))))
     }
 }
@@ -14,40 +12,40 @@ module move_ai::signed_fixed_point32 {
     use aptos_std::fixed_point32;
     use aptos_std::fixed_point32::FixedPoint32;
 
-    public fun new(value: FixedPoint32, is_negative: bool) {
-        SignedFixedPoint32 { value: value, is_negative: is_negative }
-    }
-
-    public fun new_positive(value: FixedPoint32) {
-        SignedFixedPoint32 { value: value, is_negative: false }
-    }
-
-    public fun new_negative(value: FixedPoint32) {
-        SignedFixedPoint32 { value: value, is_negative: true }
-    }
-
-    /// Define a signed integer type with two 32 bits.
+    /// Define a signed fixed point type with two 32 bits.
     struct SignedFixedPoint32 has copy, drop, store {
         value: FixedPoint32,
         is_negative: bool,
     }
 
-    /// Sub: `num - minus`
-    /// 0 is negative
-    public fun sub_fixed_point_32(num: FixedPoint32, minus: SignedFixedPoint32): SignedFixedPoint32 {
-        if (minus.is_negative) {
-            let result = fixed_point32::add(num, minus.value);
-            SignedFixedPoint32 { value: result, is_negative: false }
-        } else {
-            if (fixed_point32::greater_or_equal(num, minus.value)) {
-                let result = fixed_point32::sub(num, minus.value);
-                SignedFixedPoint32 { value: result, is_negative: false }
-            } else {
-                let result = fixed_point32::sub(minus.value, num);
-                SignedFixedPoint32 { value: result, is_negative: true }
-            }
-        }
+    public fun zero(): SignedFixedPoint32 {
+        let zero_fixed = fixed_point32::create_from_rational(0, 1);
+        SignedFixedPoint32 { value: zero_fixed, is_negative: true }
     }
+
+    public fun new(value: FixedPoint32, is_negative: bool): SignedFixedPoint32 {
+        SignedFixedPoint32 { value: value, is_negative: is_negative }
+    }
+
+    public fun create_from_int(value: u64, is_negative: bool): SignedFixedPoint32 {
+        let fixed = fixed_point32::create_from_u64(value);
+        SignedFixedPoint32 { value: fixed, is_negative: is_negative }
+    }
+
+    public fun create_from_raw_value(raw_value: u64, is_negative: bool): SignedFixedPoint32 {
+        let fixed = fixed_point32::create_from_raw_value(raw_value);
+        SignedFixedPoint32 { value: fixed, is_negative: false }
+    }
+
+    public fun new_positive(value: FixedPoint32): SignedFixedPoint32 {
+        SignedFixedPoint32 { value: value, is_negative: false }
+    }
+
+    public fun new_negative(value: FixedPoint32): SignedFixedPoint32 {
+        SignedFixedPoint32 { value: value, is_negative: true }
+    }
+
+    ///
 
     public fun exp(x: SignedFixedPoint32): SignedFixedPoint32 {
         if (x.is_negative) {
@@ -103,6 +101,14 @@ module move_ai::signed_fixed_point32 {
     public fun negate(num: SignedFixedPoint32) {
         num.is_negative = !num.is_negative;
         num
+    }
+
+    public fun equal(a: SignedFixedPoint32, b: SignedFixedPoint32) {
+        if (a.is_negative != b.is_negative) {
+            false
+        } else {
+            fixed_point32::equal(a.value, b.value)
+        }
     }
 
      spec is_negative {
