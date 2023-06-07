@@ -1,10 +1,18 @@
 module move_ai::Math {
-    use move_ai::signed_fixed_point64::{div, add, exp, negate, create_from_int};
+    use move_ai::signed_fixed_point64::{zero, div, add, exp, negate, create_from_int};
     use move_ai::signed_fixed_point64::SignedFixedPoint64;
 
     public fun sigmoid(z: SignedFixedPoint64): SignedFixedPoint64 {
         let one = create_from_int(1, false);
         div(one, add(one, exp(negate(z))))
+    }
+
+    public fun relu(z: SignedFixedPoint64): SignedFixedPoint64 {
+        if (z.is_negative) {
+            zero()
+        } else {
+            z
+        }
     }
 }
 
@@ -126,6 +134,19 @@ module move_ai::signed_fixed_point64 {
         let two = create_from_int(2, false);
         let three = create_from_int(3, false);
         assert!(equal(three, add(one, two)), 0);
+
+        let minus_one = add(create_from_int(3, true), create_from_int(2, false));
+        assert!(equal(create_from_int(1, true), minus_one), 0);
     }
+
+    // #[test]
+    // public fun test_equal() {
+    //     let num1 = create_from_int(4, false);
+    //     let num2 = create_from_int(2, false);
+    //     assert!(equal(res, add(one, two)), 0);
+
+    //     let minus_one = add(create_from_int(3, true), create_from_int(2, false));
+    //     assert!(equal(create_from_int(1, true), minus_one), 0);
+    // }
 
 }
