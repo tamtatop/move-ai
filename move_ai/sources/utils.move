@@ -1,127 +1,131 @@
 module move_ai::Math {
-    use move_ai::signed_fixed_point32::{div, add, exp, negate};
-    use move_ai::signed_fixed_point32::SignedFixedPoint32;
+    use move_ai::signed_fixed_point64::{div, add, exp, negate, create_from_int};
+    use move_ai::signed_fixed_point64::SignedFixedPoint64;
 
-    public fun sigmoid(z: &SignedFixedPoint32): SignedFixedPoint32 {
-        let one = signed_fixed_point32::create_from_int(1, true);
+    public fun sigmoid(z: SignedFixedPoint64): SignedFixedPoint64 {
+        let one = create_from_int(1, false);
         div(one, add(one, exp(negate(z))))
     }
 }
 
-module move_ai::signed_fixed_point32 {
-    use aptos_std::fixed_point32;
-    use aptos_std::fixed_point32::FixedPoint32;
+module move_ai::signed_fixed_point64 {
+    use aptos_std::math_fixed64;
+    use aptos_std::fixed_point64::FixedPoint64;
+    use aptos_std::fixed_point64;
 
     /// Define a signed fixed point type with two 32 bits.
-    struct SignedFixedPoint32 has copy, drop, store {
-        value: FixedPoint32,
+    struct SignedFixedPoint64 has copy, drop, store {
+        value: FixedPoint64,
         is_negative: bool,
     }
 
-    public fun zero(): SignedFixedPoint32 {
-        let zero_fixed = fixed_point32::create_from_rational(0, 1);
-        SignedFixedPoint32 { value: zero_fixed, is_negative: true }
+    public fun zero(): SignedFixedPoint64 {
+        let zero_fixed = fixed_point64::create_from_rational(0, 1);
+        SignedFixedPoint64 { value: zero_fixed, is_negative: true }
     }
 
-    public fun new(value: FixedPoint32, is_negative: bool): SignedFixedPoint32 {
-        SignedFixedPoint32 { value: value, is_negative: is_negative }
+    public fun new(value: FixedPoint64, is_negative: bool): SignedFixedPoint64 {
+        SignedFixedPoint64 { value: value, is_negative: is_negative }
     }
 
-    public fun create_from_int(value: u64, is_negative: bool): SignedFixedPoint32 {
-        let fixed = fixed_point32::create_from_u64(value);
-        SignedFixedPoint32 { value: fixed, is_negative: is_negative }
+    public fun create_from_int(value: u128, is_negative: bool): SignedFixedPoint64 {
+        let fixed = fixed_point64::create_from_u128(value);
+        SignedFixedPoint64 { value: fixed, is_negative: is_negative }
     }
 
-    public fun create_from_raw_value(raw_value: u64, is_negative: bool): SignedFixedPoint32 {
-        let fixed = fixed_point32::create_from_raw_value(raw_value);
-        SignedFixedPoint32 { value: fixed, is_negative: false }
+    public fun create_from_raw_value(raw_value: u128, is_negative: bool): SignedFixedPoint64 {
+        let fixed = fixed_point64::create_from_raw_value(raw_value);
+        SignedFixedPoint64 { value: fixed, is_negative: is_negative }
     }
 
-    public fun new_positive(value: FixedPoint32): SignedFixedPoint32 {
-        SignedFixedPoint32 { value: value, is_negative: false }
+    public fun new_positive(value: FixedPoint64): SignedFixedPoint64 {
+        SignedFixedPoint64 { value: value, is_negative: false }
     }
 
-    public fun new_negative(value: FixedPoint32): SignedFixedPoint32 {
-        SignedFixedPoint32 { value: value, is_negative: true }
+    public fun new_negative(value: FixedPoint64): SignedFixedPoint64 {
+        SignedFixedPoint64 { value: value, is_negative: true }
     }
 
     ///
 
-    public fun exp(x: SignedFixedPoint32): SignedFixedPoint32 {
+    public fun exp(x: SignedFixedPoint64): SignedFixedPoint64 {
         if (x.is_negative) {
-            let fixed_point = fixed_point32::exp(x.value);
-            let inverse_fixed_point = fixed_point32::mul_div(FixedPoint32 { value: 1 }, FixedPoint32 { value: 1 }, fixed_point);
-            SignedFixedPoint32 { value: inverse_fixed_point, is_negative: false }
+            let fixed_point = math_fixed64::exp(x.value);
+            div(create_from_int(1, false), new_positive(fixed_point))
         } else {
-            SignedFixedPoint32 { value: fixed_point32::exp(x.value), is_negative: false }
+            SignedFixedPoint64 { value: math_fixed64::exp(x.value), is_negative: false }
         }
         
     }
 
     /// a + b
-    public fun add(a: SignedFixedPoint32, b: SignedFixedPoint32): SignedFixedPoint32 {
+    public fun add(a: SignedFixedPoint64, b: SignedFixedPoint64): SignedFixedPoint64 {
         if (a.is_negative == b.is_negative) {
-            SignedFixedPoint32 { value: fixed_point32::add(a.value, b.value), is_negative: a.is_negative }
+            SignedFixedPoint64 { value: fixed_point64::add(a.value, b.value), is_negative: a.is_negative }
         } else {
-            if (fixed_point32::greater_or_equal(a.value, b.value)) {
-                SignedFixedPoint32 { value: fixed_point32::sub(a.value, b.value), is_negative: a.is_negative }
+            if (fixed_point64::greater_or_equal(a.value, b.value)) {
+                SignedFixedPoint64 { value: fixed_point64::sub(a.value, b.value), is_negative: a.is_negative }
             } else {
-                SignedFixedPoint32 { value: fixed_point32::sub(b.value, a.value), is_negative: b.is_negative }
+                SignedFixedPoint64 { value: fixed_point64::sub(b.value, a.value), is_negative: b.is_negative }
             }
         }
     }
 
     /// a - b
-    public fun sub(a: SignedFixedPoint32, b: SignedFixedPoint32): SignedFixedPoint32 {
+    public fun sub(a: SignedFixedPoint64, b: SignedFixedPoint64): SignedFixedPoint64 {
         add(a, negate(b))
     }
 
-    public fun mul_div(a: SignedFixedPoint32, b: SignedFixedPoint32, c: SignedFixedPoint32): SignedFixedPoint32 {
-        let value = fixed_point32::mul_div(a, b, c);
-        let sign = a.is_negative ^ b.is_negative ^ c.is_negative;
-        SignedFixedPoint32 { value: value, is_negative: sign }
+    public fun mul_div(a: SignedFixedPoint64, b: SignedFixedPoint64, c: SignedFixedPoint64): SignedFixedPoint64 {
+        let value = math_fixed64::mul_div(a.value, b.value, c.value);
+        let sign = xor(xor(a.is_negative, b.is_negative),c.is_negative);
+        SignedFixedPoint64 { value: value, is_negative: sign }
     }
 
-    public fun mul(a: SignedFixedPoint32, b: SignedFixedPoint32): SignedFixedPoint32 {
-        let one = SignedFixedPoint32{ value: 1, is_negative: false };
+    public fun mul(a: SignedFixedPoint64, b: SignedFixedPoint64): SignedFixedPoint64 {
+        let one = create_from_int(1, false);
         mul_div(a, b, one)
     }
 
-    public fun div(a: SignedFixedPoint32, b: SignedFixedPoint32): SignedFixedPoint32 {
-        let one = SignedFixedPoint32{ value: 1, is_negative: false };
+    public fun div(a: SignedFixedPoint64, b: SignedFixedPoint64): SignedFixedPoint64 {
+        let one = create_from_int(1, false);
         mul_div(one, a, b)
     }
 
     /// Check if the given num is negative.
-    public fun is_negative(num: SignedFixedPoint32): bool {
+    public fun is_negative(num: SignedFixedPoint64): bool {
         num.is_negative
     }
 
-    /// -num
-    public fun negate(num: SignedFixedPoint32) {
-        num.is_negative = !num.is_negative;
-        num
-    }
-
-    public fun equal(a: SignedFixedPoint32, b: SignedFixedPoint32) {
-        if (a.is_negative != b.is_negative) {
-            false
-        } else {
-            fixed_point32::equal(a.value, b.value)
-        }
-    }
-
-     spec is_negative {
+    spec is_negative {
         aborts_if false;
         ensures result == num.is_negative;
     }
 
+    /// -num
+    public fun negate(num: SignedFixedPoint64):  SignedFixedPoint64{
+        num.is_negative = !num.is_negative;
+        num
+    }
+
+    public fun equal(a: SignedFixedPoint64, b: SignedFixedPoint64): bool {
+        if (a.is_negative != b.is_negative) {
+            false
+        } else {
+            fixed_point64::equal(a.value, b.value)
+        }
+    }
+
+    fun xor(a: bool, b: bool): bool {
+        (a && !b) || (!a && b)
+    }
+
     #[test]
     public fun test_add() {
-        let one = SignedFixedPoint32{ value: 3, is_negative: false };
-        let two = SignedFixedPoint32{ value: 2, is_negative: false };
-        let five = SignedFixedPoint32{ value: 5, is_negative: false };
-        assert_approx_the_same(five, add(one, two));
+        let one = create_from_int(1, false);
+        let two = create_from_int(2, false);
+        let three = create_from_int(3, false);
+        assert!(equal(three, add(one, two)), 0);
     }
 
 }

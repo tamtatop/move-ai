@@ -7,3 +7,4 @@ rev = 'main'
 subdir = 'aptos-move/framework/aptos-framework'
 [addresses]
 move_ai = "0x1234"
+aptos_std = "0x1"
