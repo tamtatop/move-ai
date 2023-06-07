@@ -155,6 +155,19 @@ module move_ai::linalg {
 		true
 	}
 
+	public fun v_equal(a: &Vec, b: &Vec): bool {
+		let n0 = v_n0(a);
+		assert!(v_n0(b) == n0, 124);
+		let i = 0;
+		while ( i < n0 ) {
+			if(!signed_fixed_point64::equal(v_get(a, i), v_get(b, i))) {
+				return false
+			};
+			i = i + 1;
+		};
+		true
+	}
+
 
 	public fun pn(x: u128): SignedFixedPoint64 { // positive_number
 		signed_fixed_point64::create_from_int(x, false)
@@ -175,6 +188,53 @@ module move_ai::linalg {
 			vector[ pn(24), pn(11) ],
 		]);
 		assert!(m_equal(&m_mul_m(&a, &b), &c), 125);
+	}
+
+	#[test]
+	public fun mul_1_by_2s() {
+		let a = m_new(vector[
+			vector[ pn(1),  pn(2) ],
+		]);
+		let b = m_new(vector[
+			vector[ pn(4),  pn(1) ],
+			vector[ pn(3),  pn(2) ],
+		]);
+		let c = m_new(vector[
+			vector[ pn(10), pn( 5) ],
+		]);
+		assert!(m_equal(&m_mul_m(&a, &b), &c), 125);
+	}
+
+	#[test]
+	public fun mul_11_21() {
+		let a = m_new(vector[
+			vector[ pn(3) ],
+		]);
+		let b = m_new(vector[
+			vector[ pn(4) ],
+		]);
+		let c = m_new(vector[
+			vector[ pn(12) ],
+		]);
+		assert!(m_equal(&m_mul_m(&a, &b), &c), 125);
+	}
+
+	#[test]
+	public fun mul_m_by_v() {
+		let a = m_new(vector[
+			vector[ pn(1), pn(2), pn(3) ],
+			vector[ pn(4), pn(5), pn(6) ],
+		]);
+		let b = v_new(vector[
+			pn(7),
+			pn(8),
+			pn(9),
+		]);
+		let c = v_new(vector[
+			pn(50),
+			pn(122),
+		]);
+		assert!(v_equal(&m_mul_v(&a, &b), &c), 125);
 	}
 
 
