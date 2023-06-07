@@ -8,11 +8,53 @@ module move_ai::linalg {
 		v: vector<vector<SignedFixedPoint64>>
 	}
 
-	struct Vec has drop, store{
+	struct Vec has drop, store, copy {
 		n0: u64,
 		v: vector<SignedFixedPoint64>
 	}
 
+	public fun m_inner(m: &mut Mat): &mut vector<vector<SignedFixedPoint64>> {
+		&mut m.v
+	}
+
+	public fun v_inner(v: &mut Vec): &mut vector<SignedFixedPoint64> {
+		&mut v.v
+	}
+
+	public fun m_from_raws(values: &vector<vector<u128>>, signs: &vector<vector<bool>>): Mat {
+		let n0 = vector::length(values);
+		let n1 = vector::length(vector::borrow(values, 0));
+		let v = vector[];
+		let i = 0;
+		while (i < n0) {
+			let cur_row_w = vector::borrow(values, i);
+			let cur_row_s = vector::borrow(signs, i);
+			let g = vector[];
+			let j = 0;
+			while (j < n1) {
+				let cur_w = *vector::borrow(cur_row_w, j);
+				let cur_s = *vector::borrow(cur_row_s, j);
+				vector::push_back(&mut g, signed_fixed_point64::create_from_raw_value(cur_w, cur_s));
+				j = j + 1;
+			};
+			vector::push_back(&mut v, g);
+			i = i + 1;
+		};
+		m_new(v)
+	}
+
+	public fun v_from_raws(values: &vector<u128>, signs: &vector<bool>): Vec {
+		let n0 = vector::length(values);
+		let v = vector[];
+		let i = 0;
+		while (i < n0) {
+			let cur_w = *vector::borrow(values, i);
+			let cur_s = *vector::borrow(signs, i);
+			vector::push_back(&mut v, signed_fixed_point64::create_from_raw_value(cur_w, cur_s));
+			i = i + 1;
+		};
+		v_new(v)
+	}
 
 	public fun m_new(values: vector<vector<SignedFixedPoint64>>): Mat {
 		let n0 = ((vector::length(&values)));

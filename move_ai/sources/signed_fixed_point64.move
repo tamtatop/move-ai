@@ -1,21 +1,3 @@
-module move_ai::Math {
-    use move_ai::signed_fixed_point64::{zero, div, add, exp, negate, create_from_int};
-    use move_ai::signed_fixed_point64::SignedFixedPoint64;
-
-    public fun sigmoid(z: SignedFixedPoint64): SignedFixedPoint64 {
-        let one = create_from_int(1, false);
-        div(one, add(one, exp(negate(z))))
-    }
-
-    public fun relu(z: SignedFixedPoint64): SignedFixedPoint64 {
-        if (z.is_negative) {
-            zero()
-        } else {
-            z
-        }
-    }
-}
-
 module move_ai::signed_fixed_point64 {
     use aptos_std::math_fixed64;
     use aptos_std::fixed_point64::FixedPoint64;
