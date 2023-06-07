@@ -5,8 +5,9 @@ module move_ai::nn {
 	//use aptos_framework::resource_account;
 	//use aptos_framework::account;
 	use std::vector;
+	use std::signer;
 
-	struct NN has drop {
+	struct NN has drop, key, store {
 		layers: vector<Mat>,
 		activation_fn: vector<u8>,
 	}
@@ -14,17 +15,15 @@ module move_ai::nn {
    const SIGMOID: u8 = 0x1;
    const RELU: u8 = 0x2;
 
-	//struct ModuleConfig has key, store {
-   //     resource_signer_cap: account::SignerCapability,
-	//}
 
-   // fun init_module(publisher: &signer) {
-	//	 let resource_signer_cap = resource_account::retrieve_resource_account_cap(publisher, @move_ai);
-
-	//	 move_to<ModuleConfig>(publisher, ModuleConfig {
-	//		resource_signer_cap
-	//	 });
-	// }
+   public entry fun update_nn(self: &signer, w: vector<vector<vector<u128>>>, w_s: vector<vector<vector<bool>>>, activations: vector<u8>) acquires NN {
+		assert!(signer::address_of(self) == @move_ai, 123);
+		if(exists<NN>(signer::address_of(self))) {
+			let _ = move_from<NN>(signer::address_of(self)); // drop existing one
+		};
+		let nn = nn_from_raws(w, w_s, activations);
+		move_to<NN>(self, nn);
+	}
 
 	public fun n_layers(nn: &NN): u64 {
 		vector::length(&nn.layers)
@@ -80,17 +79,25 @@ module move_ai::nn {
 		}
 	}
 
-	struct MLAttestation has drop {
+	struct MLAttestation has key, drop {
 		in: Vec,
 		out: Vec,
 	}
 
-	public fun run(w: vector<vector<vector<u128>>>, w_s: vector<vector<vector<bool>>>, activaitons: vector<u8>, in: vector<u128>, in_s: vector<bool>): MLAttestation {
-		let nn = nn_from_raws(w, w_s, activaitons);
+	public entry fun run(sender: &signer, in: vector<u128>, in_s: vector<bool>) acquires NN, MLAttestation {
+		let nn = borrow_global<NN>(@move_ai);
 		let in = linalg::v_from_raws(&in, &in_s);
-		MLAttestation {
+		let res = eval(nn, in);
+
+		// drop if exists
+		if(exists<MLAttestation>(signer::address_of(sender))) {
+			let _ = move_from<MLAttestation>(signer::address_of(sender));
+		};
+
+
+		move_to<MLAttestation>(sender, MLAttestation {
 			in: in,
-			out: eval(&nn, in)
-		}
+			out: res,
+		})
 	}
 }
